@@ -23,6 +23,50 @@ var Init = function()
     });
 };
 
+var createSphereVertexAndIndices = function(){
+    var SPHERE_DIV = 240;
+    var i, ai, si, ci;
+    var j, aj, sj, cj;
+    var p1, p2;
+
+    // Vertices
+    var vertices = [], indices = [];
+    for (j = 0; j <= SPHERE_DIV; j++) {
+      aj = j * Math.PI / SPHERE_DIV;
+      sj = Math.sin(aj);
+      cj = Math.cos(aj);
+      for (i = 0; i <= SPHERE_DIV; i++) {
+        ai = i * 2 * Math.PI / SPHERE_DIV;
+        si = Math.sin(ai);
+        ci = Math.cos(ai);
+
+        vertices.push(si * sj);  // X
+        vertices.push(cj);       // Y
+        vertices.push(ci * sj);  // Z
+
+        vertices.push(1*i/j);      // R
+        vertices.push(1*i/j);      // G
+        vertices.push(1*i/j);      // B
+      }
+    }
+
+    for (j = 0; j < SPHERE_DIV; j++) {
+        for (i = 0; i < SPHERE_DIV; i++) {
+          p1 = j * (SPHERE_DIV+1) + i;
+          p2 = p1 + (SPHERE_DIV+1);
+
+          indices.push(p1);
+          indices.push(p2);
+          indices.push(p1 + 1);
+
+          indices.push(p1 + 1);
+          indices.push(p2);
+          indices.push(p2 + 1);
+        }
+      }
+    return [vertices, indices];
+}
+
 var main= function(vertexShaderText, fragmentShaderText){
     //init canvas
     /** @type {HTMLCanvasElement} */
@@ -151,6 +195,7 @@ var main= function(vertexShaderText, fragmentShaderText){
 		22, 20, 23
     ];
 
+    
     var boxVertexBufferObject = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices), gl.STATIC_DRAW);
@@ -159,9 +204,19 @@ var main= function(vertexShaderText, fragmentShaderText){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(boxIndices), gl.STATIC_DRAW);
     
+    var [sphereVertices, sphereIndices] = createSphereVertexAndIndices();
+    var sphereVerticesObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesObject);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereVertices), gl.STATIC_DRAW);
+
+    var sphereIndexBufferObject = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndexBufferObject);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sphereIndices), gl.STATIC_DRAW);
+
     var positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
     var colorAttribLocation = gl.getAttribLocation(program, 'vertColor');
     
+        
     //Get the Attribute of the object
     gl.vertexAttribPointer(
         positionAttribLocation, //Attribute location
@@ -179,7 +234,8 @@ var main= function(vertexShaderText, fragmentShaderText){
         6 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
         3 * Float32Array.BYTES_PER_ELEMENT// Offset from the beginning of a single vertex to this attribue
     );
-    
+
+
     gl.enableVertexAttribArray(positionAttribLocation);
     gl.enableVertexAttribArray(colorAttribLocation);
 
@@ -219,8 +275,9 @@ var main= function(vertexShaderText, fragmentShaderText){
 
 		gl.clearColor(0.75, 0.85, 0.8, 1.0);
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-		gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
-
+        
+		gl.drawElements(gl.TRIANGLES, sphereIndices.length, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
 		requestAnimationFrame(loop);
 	};
 	requestAnimationFrame(loop);
