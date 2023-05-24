@@ -57,9 +57,9 @@ var createSphereVertexAndIndices = function(x, y, z){
         vertices.push(cj + y);       // Y
         vertices.push(ci * sj + z);  // Z
 
-        vertices.push(1*i/j);      // R
-        vertices.push(1*i/j);      // G
-        vertices.push(1*i/j);      // B
+        vertices.push(si * sj);  // R
+        vertices.push(cj);       // G
+        vertices.push(ci * sj);  // B
       }
     }
 
