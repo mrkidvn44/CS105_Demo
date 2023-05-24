@@ -22,50 +22,8 @@ var Init = function()
         }
     });
 };
-
-var createSphereVertexAndIndices = function(){
-    var SPHERE_DIV = 240;
-    var i, ai, si, ci;
-    var j, aj, sj, cj;
-    var p1, p2;
-
-    // Vertices
-    var vertices = [], indices = [];
-    for (j = 0; j <= SPHERE_DIV; j++) {
-      aj = j * Math.PI / SPHERE_DIV;
-      sj = Math.sin(aj);
-      cj = Math.cos(aj);
-      for (i = 0; i <= SPHERE_DIV; i++) {
-        ai = i * 2 * Math.PI / SPHERE_DIV;
-        si = Math.sin(ai);
-        ci = Math.cos(ai);
-
-        vertices.push(si * sj);  // X
-        vertices.push(cj);       // Y
-        vertices.push(ci * sj);  // Z
-
-        vertices.push(1*i/j);      // R
-        vertices.push(1*i/j);      // G
-        vertices.push(1*i/j);      // B
-      }
-    }
-
-    for (j = 0; j < SPHERE_DIV; j++) {
-        for (i = 0; i < SPHERE_DIV; i++) {
-          p1 = j * (SPHERE_DIV+1) + i;
-          p2 = p1 + (SPHERE_DIV+1);
-
-          indices.push(p1);
-          indices.push(p2);
-          indices.push(p1 + 1);
-
-          indices.push(p1 + 1);
-          indices.push(p2);
-          indices.push(p2 + 1);
-        }
-      }
-    return [vertices, indices];
-}
+//TO DO: create a cube vertex and indices funtion
+//TO DO: create a draw function
 
 var main= function(vertexShaderText, fragmentShaderText){
     //init canvas
@@ -129,112 +87,14 @@ var main= function(vertexShaderText, fragmentShaderText){
     //
     // Create buffer
     //
-    var boxVertices = 
-	[ // X, Y, Z           R, G, B
-		// Top
-		-1.0, 1.0, -1.0,   0.5, 0.5, 0.5,
-		-1.0, 1.0, 1.0,    0.5, 0.5, 0.5,
-		1.0, 1.0, 1.0,     0.5, 0.5, 0.5,
-		1.0, 1.0, -1.0,    0.5, 0.5, 0.5,
-
-		// Left
-		-1.0, 1.0, 1.0,    0.75, 0.25, 0.5,
-		-1.0, -1.0, 1.0,   0.75, 0.25, 0.5,
-		-1.0, -1.0, -1.0,  0.75, 0.25, 0.5,
-		-1.0, 1.0, -1.0,   0.75, 0.25, 0.5,
-
-		// Right
-		1.0, 1.0, 1.0,    0.25, 0.25, 0.75,
-		1.0, -1.0, 1.0,   0.25, 0.25, 0.75,
-		1.0, -1.0, -1.0,  0.25, 0.25, 0.75,
-		1.0, 1.0, -1.0,   0.25, 0.25, 0.75,
-
-		// Front
-		1.0, 1.0, 1.0,    1.0, 0.0, 0.15,
-		1.0, -1.0, 1.0,    1.0, 0.0, 0.15,
-		-1.0, -1.0, 1.0,    1.0, 0.0, 0.15,
-		-1.0, 1.0, 1.0,    1.0, 0.0, 0.15,
-
-		// Back
-		1.0, 1.0, -1.0,    0.0, 1.0, 0.15,
-		1.0, -1.0, -1.0,    0.0, 1.0, 0.15,
-		-1.0, -1.0, -1.0,    0.0, 1.0, 0.15,
-		-1.0, 1.0, -1.0,    0.0, 1.0, 0.15,
-
-		// Bottom
-		-1.0, -1.0, -1.0,   0.5, 0.5, 1.0,
-		-1.0, -1.0, 1.0,    0.5, 0.5, 1.0,
-		1.0, -1.0, 1.0,     0.5, 0.5, 1.0,
-		1.0, -1.0, -1.0,    0.5, 0.5, 1.0,
-	];
-
-    var boxIndices =
-    [
-        // Top
-		0, 1, 2,
-		0, 2, 3,
-
-		// Left
-		5, 4, 6,
-		6, 4, 7,
-
-		// Right
-		8, 9, 10,
-		8, 10, 11,
-
-		// Front
-		13, 12, 14,
-		15, 14, 12,
-
-		// Back
-		16, 17, 18,
-		16, 18, 19,
-
-		// Bottom
-		21, 20, 22,
-		22, 20, 23
-    ];
-
+    var [boxVertices, boxIndices] = createBoxVertexAndIndices(-3,0,0);
     
-    var boxVertexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices), gl.STATIC_DRAW);
     
-    var boxIndexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(boxIndices), gl.STATIC_DRAW);
+    var [sphereVertices, sphereIndices] = createSphereVertexAndIndices(3,0,0,240);
+    createBufferFromVerticesAndIndices(gl, sphereVertices, sphereIndices);
     
-    var [sphereVertices, sphereIndices] = createSphereVertexAndIndices();
-    var sphereVerticesObject = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereVertices), gl.STATIC_DRAW);
-
-    var sphereIndexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndexBufferObject);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sphereIndices), gl.STATIC_DRAW);
-
     var positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
     var colorAttribLocation = gl.getAttribLocation(program, 'vertColor');
-    
-        
-    //Get the Attribute of the object
-    gl.vertexAttribPointer(
-        positionAttribLocation, //Attribute location
-        3, // Number of element per attribute
-        gl.FLOAT, // Type of elements
-        gl.FALSE,
-        6 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-        0 // Offset from the beginning of a single vertex to this attribue
-    );
-    gl.vertexAttribPointer(
-        colorAttribLocation, //Attribute location
-        3, // Number of element per attribute
-        gl.FLOAT, // Type of elements
-        gl.FALSE,
-        6 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-        3 * Float32Array.BYTES_PER_ELEMENT// Offset from the beginning of a single vertex to this attribue
-    );
-
 
     gl.enableVertexAttribArray(positionAttribLocation);
     gl.enableVertexAttribArray(colorAttribLocation);
@@ -275,10 +135,18 @@ var main= function(vertexShaderText, fragmentShaderText){
 
 		gl.clearColor(0.75, 0.85, 0.8, 1.0);
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-        
-		gl.drawElements(gl.TRIANGLES, sphereIndices.length, gl.UNSIGNED_SHORT, 0);
+
+        // Draw box
+        createBufferFromVerticesAndIndices(gl, boxVertices, boxIndices);
+        getAttribData(gl, positionAttribLocation, colorAttribLocation);
         gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
-		requestAnimationFrame(loop);
+
+        // Draw sphere
+        createBufferFromVerticesAndIndices(gl, sphereVertices, sphereIndices);
+        getAttribData(gl, positionAttribLocation, colorAttribLocation);
+        gl.drawElements(gl.TRIANGLES, sphereIndices.length, gl.UNSIGNED_SHORT, 0);
+		
+        requestAnimationFrame(loop);
 	};
 	requestAnimationFrame(loop);
 };
