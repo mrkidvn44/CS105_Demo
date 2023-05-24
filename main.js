@@ -42,6 +42,7 @@ var main= function(vertexShaderText, fragmentShaderText){
         gl.viewport(0,0,gl.canvas.width, gl.canvas.height);
         //console.log("resized");
     }
+    // Resize window event Listenner;
     window.addEventListener('resize', resizer);
     resizer();
 
@@ -106,16 +107,56 @@ var main= function(vertexShaderText, fragmentShaderText){
     var viewMatrix = new Float32Array(16);
     var projMatrix = new Float32Array(16);
     
+    var camX = 0; 
+    var camY = 5;
+    var camZ = -10;
+
     mat4.identity(worldMatrix);
-    mat4.lookAt(viewMatrix, [0,5,-10], [0,0,0], [0,1,0]);
+    mat4.lookAt(viewMatrix, [camX,camY,camZ], [0,0,0], [0,1,0]);
     mat4.perspective(projMatrix, glMatrix.toRadian(45), canvas.clientWidth/canvas.clientHeight,0.1,1000.0);
     
     gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
 	gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
 	gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
-   
-    var xRotationMatrix = new Float32Array(16);
-	var yRotationMatrix = new Float32Array(16);
+
+    
+    let isDown = false;
+    let xpos = 0;
+    let ypos = 0;
+    let deltaX = 0;
+    let deltaY = 0;
+    window.addEventListener('mousedown', function(event){
+        isDown = true;
+        xpos = event.clientX;
+        ypos = event.clientY;
+        deltaX = 0;
+        deltaY = 0;
+    }, false);
+
+    window.addEventListener('mousemove', function(event){
+        if (isDown === true) {
+            deltaX = event.clientX - xpos;
+            deltaY = event.clientY - ypos;
+            var sensitivity = 0.5;
+            camX += deltaX * sensitivity;
+            camY += deltaY * sensitivity;
+            xpos = event.clientX;
+            ypos = event.clientY;
+        }
+    }, false);
+
+    window.addEventListener('mouseup',function(event){
+        if (isDown === true) {
+            deltaX = 0;
+            deltaY = 0;
+            isDown = false;
+        }
+    }, false)  
+    
+    window.addEventListener('wheel',function(event){
+        var sensitivity = 0.005;
+        camZ -= sensitivity * event.wheelDelta;
+    }, false)  
 
 	//
 	// Main render loop
@@ -124,14 +165,12 @@ var main= function(vertexShaderText, fragmentShaderText){
 	mat4.identity(identityMatrix);
 	var angle = 0;
 	var loop = function () {
-		/*angle = performance.now() / 1000 / 6 * 2 * Math.PI;
-		mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
-		mat4.rotate(xRotationMatrix, identityMatrix, 0, [1, 0, 0]);
-		mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
-		gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);*/
-
+		
+        mat4.lookAt(viewMatrix,  [camX,camY,camZ], [0,0,0], [0,1,0]);
 		gl.clearColor(0.75, 0.85, 0.8, 1.0);
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+
+        gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
 
         // Draw box
         createBufferFromVerticesAndIndices(gl, boxVertices, boxIndices);
