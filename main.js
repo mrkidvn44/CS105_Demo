@@ -22,8 +22,6 @@ var Init = function()
         }
     });
 };
-//TO DO: create a cube vertex and indices funtion
-//TO DO: create a draw function
 
 var main= function(vertexShaderText, fragmentShaderText){
     //init canvas
@@ -35,6 +33,7 @@ var main= function(vertexShaderText, fragmentShaderText){
     if (!gl) {
         return;
     }
+
     //resize function
     function resizer(){
         canvas.width = window.innerWidth;
@@ -42,26 +41,31 @@ var main= function(vertexShaderText, fragmentShaderText){
         gl.viewport(0,0,gl.canvas.width, gl.canvas.height);
         //console.log("resized");
     }
+
     // Resize window event Listenner;
     window.addEventListener('resize', resizer);
     resizer();
 
+    // Draw back ground
     gl.clearColor(0.75,0.85,0.8,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    // Enable depth test to draw face at the corect depth
+    // Enable depth test to draw face at the correct depth
     gl.enable(gl.DEPTH_TEST);
-    //
+    // Enable CULL_FACE to only draw the front face
     gl.enable(gl.CULL_FACE);
     gl.frontFace(gl.CCW);
     gl.cullFace(gl.BACK);
+
     //
     // Create shader
     //
     var vertexShader = gl.createShader(gl.VERTEX_SHADER);
     var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 
+    // Tell web gl which shaderSource we are using
     gl.shaderSource(vertexShader, vertexShaderText);
     gl.shaderSource(fragmentShader, fragmentShaderText);
+    
     //check compile shader
     gl.compileShader(vertexShader);
     if(!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)){
@@ -69,16 +73,19 @@ var main= function(vertexShaderText, fragmentShaderText){
         return;
     }
     gl.compileShader(fragmentShader);
-     //check compile shader
+    
+    //check compile shader
     if(!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)){
         console.error('ERROR compiling fragment shader', gl.getShaderInfoLog(fragmentShader));
         return;
     }
+    
     //create program like in C
     var program = gl.createProgram();
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
+    
     //check for error when linking shader
     if(!gl.getProgramParameter(program, gl.LINK_STATUS)){
         console.error('ERROR linking program', gl.getProgramInfoLog(program));
@@ -96,9 +103,11 @@ var main= function(vertexShaderText, fragmentShaderText){
 
     gl.enableVertexAttribArray(positionAttribLocation);
     gl.enableVertexAttribArray(colorAttribLocation);
-
+    
+    // Tell WebGL which program we are using
     gl.useProgram(program);
 
+    // Create uniform matrix from program.
     var matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
     var matViewUniformLocation = gl.getUniformLocation(program, 'mView');
     var matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
@@ -107,71 +116,34 @@ var main= function(vertexShaderText, fragmentShaderText){
     var viewMatrix = new Float32Array(16);
     var projMatrix = new Float32Array(16);
     
-    var camX = 0; 
-    var camY = 5;
-    var camZ = -10;
+    // Camera posistion
+    var camPos = [0,0, -10]
 
+    // Init some value for matrices
     mat4.identity(worldMatrix);
-    mat4.lookAt(viewMatrix, [camX,camY,camZ], [0,0,0], [0,1,0]);
+    mat4.lookAt(viewMatrix, camPos, [0,0,0], [0,1,0]);
     mat4.perspective(projMatrix, glMatrix.toRadian(45), canvas.clientWidth/canvas.clientHeight,0.1,1000.0);
     
     gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
 	gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
 	gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
 
+    // Mouse event handler
+    mouseControl(window, camPos);
     
-    let isDown = false;
-    let xpos = 0;
-    let ypos = 0;
-    let deltaX = 0;
-    let deltaY = 0;
-    window.addEventListener('mousedown', function(event){
-        isDown = true;
-        xpos = event.clientX;
-        ypos = event.clientY;
-        deltaX = 0;
-        deltaY = 0;
-    }, false);
-
-    window.addEventListener('mousemove', function(event){
-        if (isDown === true) {
-            deltaX = event.clientX - xpos;
-            deltaY = event.clientY - ypos;
-            var sensitivity = 0.5;
-            camX += deltaX * sensitivity;
-            camY += deltaY * sensitivity;
-            xpos = event.clientX;
-            ypos = event.clientY;
-        }
-    }, false);
-
-    window.addEventListener('mouseup',function(event){
-        if (isDown === true) {
-            deltaX = 0;
-            deltaY = 0;
-            isDown = false;
-        }
-    }, false)  
-    
-    window.addEventListener('wheel',function(event){
-        var sensitivity = 0.005;
-        camZ -= sensitivity * event.wheelDelta;
-    }, false)  
 
 	//
 	// Main render loop
 	//
 	var identityMatrix = new Float32Array(16);
 	mat4.identity(identityMatrix);
-	var angle = 0;
 	var loop = function () {
-		
-        mat4.lookAt(viewMatrix,  [camX,camY,camZ], [0,0,0], [0,1,0]);
-		gl.clearColor(0.75, 0.85, 0.8, 1.0);
-		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-
+		// Update camera position
+        mat4.lookAt(viewMatrix,camPos, [0,0,0], [0,1,0]);
         gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
-
+        // Draw background
+        gl.clearColor(0.75, 0.85, 0.8, 1.0);
+		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
         // Draw box
         createBufferFromVerticesAndIndices(gl, boxVertices, boxIndices);
         getAttribData(gl, positionAttribLocation, colorAttribLocation);
