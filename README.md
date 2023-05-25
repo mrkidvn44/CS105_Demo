@@ -2,6 +2,7 @@
  Demo for CS105 Seminar
 ---------------------------------------
 To run this you can host a local server
+
 You can use http.server for this
 ---------------------------------------
 This is a demonstation code for CS105 
