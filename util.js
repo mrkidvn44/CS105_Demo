@@ -13,6 +13,7 @@ var loadTextResource = function (url, callback){
     };
     request.send();
 }
+// Load image function for texture
 var loadImage = function (url, callback){
     var image = new Image();
     image.onload = function(){
@@ -21,6 +22,7 @@ var loadImage = function (url, callback){
     image.src = url;
 }
 
+// Load JSON 3d resource
 var loadJSONResource = function(url, callback){
     loadTextResource(url, function(err, result){
         if(err){
@@ -36,6 +38,7 @@ var loadJSONResource = function(url, callback){
 }
 // TO DO: create Color vertex function
 // This function create vertices with offset, because we don't need animation so this will do
+// x, y, z is offset
 var createSphereVertexAndIndices = function(x, y, z){
     var SPHERE_DIV = 240;
     var i, ai, si, ci;
@@ -45,45 +48,49 @@ var createSphereVertexAndIndices = function(x, y, z){
     // Vertices
     var vertices = [], indices = [];
     for (j = 0; j <= SPHERE_DIV; j++) {
-      aj = j * Math.PI / SPHERE_DIV;
-      sj = Math.sin(aj);
-      cj = Math.cos(aj);
-      for (i = 0; i <= SPHERE_DIV; i++) {
-        ai = i * 2 * Math.PI / SPHERE_DIV;
-        si = Math.sin(ai);
-        ci = Math.cos(ai);
+        // Math from online source to calculate all the vertice of a sphere
+        aj = j * Math.PI / SPHERE_DIV;
+        sj = Math.sin(aj);
+        cj = Math.cos(aj);
+        for (i = 0; i <= SPHERE_DIV; i++) {
+            ai = i * 2 * Math.PI / SPHERE_DIV; 
+            si = Math.sin(ai);
+            ci = Math.cos(ai);
 
-        vertices.push(si * sj + x);  // X
-        vertices.push(cj + y);       // Y
-        vertices.push(ci * sj + z);  // Z
 
-        vertices.push(si * sj);  // R
-        vertices.push(cj);       // G
-        vertices.push(ci * sj);  // B
-      }
+            vertices.push(si * sj + x);  // X
+            vertices.push(cj + y);       // Y
+            vertices.push(ci * sj + z);  // Z
+
+            vertices.push(si * sj);  // R
+            vertices.push(cj);       // G
+            vertices.push(ci * sj);  // B
+        }
     }
 
     for (j = 0; j < SPHERE_DIV; j++) {
         for (i = 0; i < SPHERE_DIV; i++) {
-          p1 = j * (SPHERE_DIV+1) + i;
-          p2 = p1 + (SPHERE_DIV+1);
+            // Math for the indices of sphere
+            p1 = j * (SPHERE_DIV+1) + i;
+            p2 = p1 + (SPHERE_DIV+1);
 
-          indices.push(p1);
-          indices.push(p2);
-          indices.push(p1 + 1);
+            indices.push(p1);
+            indices.push(p2);
+            indices.push(p1 + 1);
 
-          indices.push(p1 + 1);
-          indices.push(p2);
-          indices.push(p2 + 1);
+            indices.push(p1 + 1);
+            indices.push(p2);
+            indices.push(p2 + 1);
         }
       }
     return [vertices, indices];
 }
 // This function create vertices with offset, because we don't need animation so this will do
+// x, y, z is offset
 var createBoxVertexAndIndices = function(x, y, z){
     var boxVertices = 
-	[   // X,        Y,       Z           R, G, B
-		// Top
+	[   // X,        Y,       Z           R, G, B   
+		// Top                          // change this matrix to U V for texture map (online source)
 		-1.0 + x, 1.0 + y, -1.0 + z,   0.5, 0.5, 0.5,
 		-1.0 + x, 1.0 + y, 1.0 + z,    0.5, 0.5, 0.5,
 		1.0 + x, 1.0 + y, 1.0 + z,     0.5, 0.5, 0.5,
@@ -120,6 +127,7 @@ var createBoxVertexAndIndices = function(x, y, z){
 		1.0 + x, -1.0 + y, -1.0 + z,    0.5, 0.5, 1.0,
 	];
 
+    // Indices is correct and don't need to change
     var boxIndices =
     [
         // Top
@@ -152,17 +160,23 @@ var createBoxVertexAndIndices = function(x, y, z){
 // Get Buffer data to draw object
 var createBufferFromVerticesAndIndices= function(gl, Vertices, Indices)
 {
+    // Create buffer object
     var VerticesBufferObject = gl.createBuffer();
+    // Bind it to graphic library object
     gl.bindBuffer(gl.ARRAY_BUFFER, VerticesBufferObject);
+    // Put data to buffer from array
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(Vertices), gl.STATIC_DRAW);
+
     var IndexBufferObject = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, IndexBufferObject);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(Indices), gl.STATIC_DRAW);
     return gl;
 }
 
+// This is an get attribute data funtion for color only, if use texture map build a new one or change the color attribute pointer
 var getAttribData = function(gl, positionAttribLocation, colorAttribLocation)
 {
+    // Position attribute from buffer
     gl.vertexAttribPointer(
         positionAttribLocation, //Attribute location
         3, // Number of element per attribute
@@ -171,6 +185,7 @@ var getAttribData = function(gl, positionAttribLocation, colorAttribLocation)
         6 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
         0 // Offset from the beginning of a single vertex to this attribue
     );
+    // Color attribute from buffer
     gl.vertexAttribPointer(
         colorAttribLocation, //Attribute location
         3, // Number of element per attribute

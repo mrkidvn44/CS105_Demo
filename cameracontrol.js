@@ -5,6 +5,8 @@ var mouseControl = function(window, camPos){
     let deltaX = 0;
     let deltaY = 0;
 
+
+    // Mouse click event handler
     window.addEventListener('mousedown', function(event){
         isDown = true;
         xpos = event.clientX;
@@ -13,6 +15,7 @@ var mouseControl = function(window, camPos){
         deltaY = 0;
     }, false);
 
+    // Mouse move event handler
     window.addEventListener('mousemove', function(event){
         if (isDown === true) {
             deltaX = event.clientX - xpos;
@@ -28,6 +31,7 @@ var mouseControl = function(window, camPos){
         }
     }, false);
 
+    // Mouse button up event handler
     window.addEventListener('mouseup',function(){
         if (isDown === true) {
             isDown = false;
