@@ -6,24 +6,33 @@ import * as mat4 from './lib/mat4.js'
 // Because Java script won't run on GPU so build your own shaders
 var Init = function()
 {
-    loadTextResource('./shaders/shader.vs.glsl', function(vsErr, vsText){
-        if(vsErr){
-            alert('Falal error getting vertex shader (see console)');
-            console.error(vsErr);
-        } else{
-            loadTextResource('./shaders/shader.fs.glsl', function(fsErr, fsText){
-                if(fsErr){
-                    alert('Falal error getting fragment shader (see console)');
-                    console.error(fsErr);
-                } else{
-                    main(vsText, fsText);
-                }
-            });
+    loadImage('./crate.png', function(imgErr, imgText)
+    {
+        if(imgErr){
+            alert('Fatal error getting image');
+            console.log(imgErr)
         }
-    });
+        else{
+            loadTextResource('./shaders/shader.tvs.glsl', function(vsErr, vsText){
+            if(vsErr){
+                alert('Fatal error getting vertex shader (see console)');
+                console.error(vsErr);
+            } else{
+                loadTextResource('./shaders/shader.tfs.glsl', function(fsErr, fsText){
+                    if(fsErr){
+                        alert('Fatal error getting fragment shader (see console)');
+                        console.error(fsErr);
+                    } else{
+                        main(vsText, fsText, imgText);
+                    }
+                });
+            }
+        }
+        )
+    }});
 };
 
-var main= function(vertexShaderText, fragmentShaderText){
+var main= function(vertexShaderText, fragmentShaderText, img){
     //init canvas
     /** @type {HTMLCanvasElement} */
     var canvas = document.getElementById("glcanvas"); 
@@ -95,15 +104,26 @@ var main= function(vertexShaderText, fragmentShaderText){
     //
     // Create vertices for buffer
     //
-    var [boxVertices, boxIndices] = createBoxVertexAndIndices(-3,0,0);
-    var [sphereVertices, sphereIndices] = createSphereVertexAndIndices(3,0,0,240);
+    var [boxVertices, boxIndices] = createBoxVertexAndIndices_texture(-3,0,0);
+    var [sphereVertices, sphereIndices] = createSphereVertexAndIndices_texture(3,0,0,240);
     
     var positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
-    var colorAttribLocation = gl.getAttribLocation(program, 'vertColor');
+    var texCoordAttribLocation = gl.getAttribLocation(program, 'vertTexCoor');
 
     gl.enableVertexAttribArray(positionAttribLocation);
-    gl.enableVertexAttribArray(colorAttribLocation);
+    gl.enableVertexAttribArray(texCoordAttribLocation);
     
+    var boxTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, boxTexture);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	gl.texImage2D(
+		gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,
+		gl.UNSIGNED_BYTE,
+		img
+	);
     // Tell WebGL which program we are using
     gl.useProgram(program);
 
@@ -146,12 +166,14 @@ var main= function(vertexShaderText, fragmentShaderText){
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
         // Draw box
         createBufferFromVerticesAndIndices(gl, boxVertices, boxIndices);
-        getAttribData(gl, positionAttribLocation, colorAttribLocation);
+        getAttribData_TextureFrag(gl, positionAttribLocation, texCoordAttribLocation);
+        gl.bindTexture(gl.TEXTURE_2D, boxTexture);
+        gl.activeTexture(gl.TEXTURE0);
         gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
-
+        
         // Draw sphere
         createBufferFromVerticesAndIndices(gl, sphereVertices, sphereIndices);
-        getAttribData(gl, positionAttribLocation, colorAttribLocation);
+        getAttribData_TextureFrag(gl, positionAttribLocation, texCoordAttribLocation);
         gl.drawElements(gl.TRIANGLES, sphereIndices.length, gl.UNSIGNED_SHORT, 0);
 		
         requestAnimationFrame(loop);
