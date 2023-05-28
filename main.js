@@ -6,24 +6,33 @@ import * as mat4 from './lib/mat4.js'
 // Because Java script won't run on GPU so build your own shaders
 var Init = function()
 {
-    loadTextResource('./shaders/shader.vs.glsl', function(vsErr, vsText){
-        if(vsErr){
-            alert('Falal error getting vertex shader (see console)');
-            console.error(vsErr);
-        } else{
-            loadTextResource('./shaders/shader.fs.glsl', function(fsErr, fsText){
-                if(fsErr){
-                    alert('Falal error getting fragment shader (see console)');
-                    console.error(fsErr);
-                } else{
-                    main(vsText, fsText);
-                }
-            });
+    loadImage('./crate.png', function(imgErr, imgText)
+    {
+        if(imgErr){
+            alert('Fatal error getting image');
+            console.log(imgErr)
         }
-    });
+        else{
+            loadTextResource('./shaders/shader.tvs.glsl', function(vsErr, vsText){
+            if(vsErr){
+                alert('Fatal error getting vertex shader (see console)');
+                console.error(vsErr);
+            } else{
+                loadTextResource('./shaders/shader.tfs.glsl', function(fsErr, fsText){
+                    if(fsErr){
+                        alert('Fatal error getting fragment shader (see console)');
+                        console.error(fsErr);
+                    } else{
+                        main(vsText, fsText, imgText);
+                    }
+                });
+            }
+        }
+        )
+    }});
 };
 
-var main= function(vertexShaderText, fragmentShaderText){
+var main= function(vertexShaderText, fragmentShaderText, img){
     //init canvas
     /** @type {HTMLCanvasElement} */
     var canvas = document.getElementById("glcanvas"); 
@@ -47,7 +56,8 @@ var main= function(vertexShaderText, fragmentShaderText){
     resizer();
 
     // Draw back ground
-    gl.clearColor(0.75,0.85,0.8,1.0);
+    gl.clearColor( 0.5, 0.5, 0.5, 0.9 );
+    gl.clearDepth( 1.0 );
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // Enable depth test to draw face at the correct depth
     gl.enable(gl.DEPTH_TEST);
@@ -56,6 +66,7 @@ var main= function(vertexShaderText, fragmentShaderText){
     gl.frontFace(gl.CCW);
     gl.cullFace(gl.BACK);
 
+    gl.depthFunc( gl.LEQUAL );
     //
     // Create shader
     //
@@ -95,15 +106,31 @@ var main= function(vertexShaderText, fragmentShaderText){
     //
     // Create vertices for buffer
     //
-    var [boxVertices, boxIndices] = createBoxVertexAndIndices(-3,0,0);
-    var [sphereVertices, sphereIndices] = createSphereVertexAndIndices(3,0,0,240);
+    var [boxVertices, boxIndices] = createBoxVertexAndIndices_texture(-6,0,0);
+    var [sphereVertices, sphereIndices] = createSphereVertexAndIndices_texture(3,0,0,240);
     
+    var boxNormal = getCubeNormal();
+    var sphereNormal = getSphereNormal();
+
     var positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
-    var colorAttribLocation = gl.getAttribLocation(program, 'vertColor');
+    var texCoordAttribLocation = gl.getAttribLocation(program, 'vertTexCoord');
+    var normalAttribLocation = gl.getAttribLocation(program, 'vertNormal')
 
     gl.enableVertexAttribArray(positionAttribLocation);
-    gl.enableVertexAttribArray(colorAttribLocation);
+    gl.enableVertexAttribArray(texCoordAttribLocation);
+    gl.enableVertexAttribArray(normalAttribLocation);
     
+    var boxTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, boxTexture);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	gl.texImage2D(
+		gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,
+		gl.UNSIGNED_BYTE,
+		img
+	);
     // Tell WebGL which program we are using
     gl.useProgram(program);
 
@@ -116,6 +143,20 @@ var main= function(vertexShaderText, fragmentShaderText){
     var viewMatrix = new Float32Array(16);
     var projMatrix = new Float32Array(16);
     
+    var w_matrix = [1,0,0,0, 0,1,0,0, 0,0,1,0, 3,0,0,1];
+    var w_matrix2 = [1,0,0,0, 0,1,0,0, 0,0,1,0, -3,0,0,1];
+
+    // Light information
+    gl.useProgram(program);
+
+	var ambientUniformLocation = gl.getUniformLocation(program, 'ambientLightIntensity');
+	var sunlightDirUniformLocation = gl.getUniformLocation(program, 'sun.direction');
+	var sunlightIntUniformLocation = gl.getUniformLocation(program, 'sun.color');
+
+	gl.uniform3f(ambientUniformLocation, 0.5, 0.5, 0.2);
+	gl.uniform3f(sunlightDirUniformLocation, -0.5, -2.0, -1.0);
+	gl.uniform3f(sunlightIntUniformLocation, 1.0, 1.0, 1.0);
+
     // Camera posistion
     var camPos = [0,0, -10]
 
@@ -124,9 +165,7 @@ var main= function(vertexShaderText, fragmentShaderText){
     mat4.lookAt(viewMatrix, camPos, [0,0,0], [0,1,0]);
     mat4.perspective(projMatrix, glMatrix.toRadian(45), canvas.clientWidth/canvas.clientHeight,0.1,1000.0);
     
-    gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-	gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
-	gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
+    
 
     // Mouse event handler
     mouseControl(window, camPos);
@@ -135,23 +174,38 @@ var main= function(vertexShaderText, fragmentShaderText){
 	//
 	// Main render loop
 	//
-	var identityMatrix = new Float32Array(16);
-	mat4.identity(identityMatrix);
 	var loop = function () {
 		// Update camera position
         mat4.lookAt(viewMatrix,camPos, [0,0,0], [0,1,0]);
         gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
         // Draw background
-        gl.clearColor(0.75, 0.85, 0.8, 1.0);
+        gl.viewport( 0.0, 0.0, canvas.width, canvas.height );
+        gl.clearColor( 0.5, 0.5, 0.5, 0.9 );
+    	gl.clearDepth( 1.0 );
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
         // Draw box
         createBufferFromVerticesAndIndices(gl, boxVertices, boxIndices);
-        getAttribData(gl, positionAttribLocation, colorAttribLocation);
-        gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
+        getAttribData_TextureFrag(gl, positionAttribLocation, texCoordAttribLocation);
+        createNormalBuffer(gl, boxNormal);
+        getNormalAttribData(gl, normalAttribLocation);
+        
+        gl.bindTexture(gl.TEXTURE_2D, boxTexture);
+        gl.activeTexture(gl.TEXTURE0);
 
+        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, w_matrix);
+	    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
+	    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
+        gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
+        
         // Draw sphere
         createBufferFromVerticesAndIndices(gl, sphereVertices, sphereIndices);
-        getAttribData(gl, positionAttribLocation, colorAttribLocation);
+        getAttribData_TextureFrag(gl, positionAttribLocation, texCoordAttribLocation);
+        createNormalBuffer(gl, sphereNormal);
+        getNormalAttribData(gl, normalAttribLocation);
+
+        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, w_matrix2);
+	    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
+	    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
         gl.drawElements(gl.TRIANGLES, sphereIndices.length, gl.UNSIGNED_SHORT, 0);
 		
         requestAnimationFrame(loop);
