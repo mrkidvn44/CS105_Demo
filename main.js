@@ -172,7 +172,7 @@ var main= function(vertexShaderText, fragmentShaderText, imgbox, imgsphere){
 	var sunlightIntUniformLocation = gl.getUniformLocation(program, 'sun.color');
 
 	gl.uniform3f(ambientUniformLocation, 0.5, 0.5, 0.2);
-	gl.uniform3f(sunlightDirUniformLocation, -0.5, -2.0, -1.0);
+	gl.uniform3f(sunlightDirUniformLocation, -1.0, 1.0, -1.0);
 	gl.uniform3f(sunlightIntUniformLocation, 1.0, 1.0, 1.0);
 
     // Camera posistion
