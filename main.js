@@ -6,33 +6,38 @@ import * as mat4 from './lib/mat4.js'
 // Because Java script won't run on GPU so build your own shaders
 var Init = function()
 {
-    loadImage('./crate.png', function(imgErr, imgText)
-    {
-        if(imgErr){
-            alert('Fatal error getting image');
-            console.log(imgErr)
+    loadImage('./crate.png', function(boxImgErr, boxImgText) {
+        if (boxImgErr) {
+            alert('Fatal error getting box texture');
+            console.log(boxImgErr);
+        } else {
+            loadImage('./earthmap1k.jpg', function(sphereImgErr, sphereImgText) {
+                if (sphereImgErr) {
+                    alert('Fatal error getting sphere texture');
+                    console.log(sphereImgErr);
+                } else {
+                    loadTextResource('./shaders/shader.tvs.glsl', function(vsErr, vsText) {
+                        if (vsErr) {
+                            alert('Fatal error getting vertex shader (see console)');
+                            console.error(vsErr);
+                        } else {
+                            loadTextResource('./shaders/shader.tfs.glsl', function(fsErr, fsText) {
+                                if (fsErr) {
+                                    alert('Fatal error getting fragment shader (see console)');
+                                    console.error(fsErr);
+                                } else {
+                                    main(vsText, fsText, boxImgText, sphereImgText);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
         }
-        else{
-            loadTextResource('./shaders/shader.tvs.glsl', function(vsErr, vsText){
-            if(vsErr){
-                alert('Fatal error getting vertex shader (see console)');
-                console.error(vsErr);
-            } else{
-                loadTextResource('./shaders/shader.tfs.glsl', function(fsErr, fsText){
-                    if(fsErr){
-                        alert('Fatal error getting fragment shader (see console)');
-                        console.error(fsErr);
-                    } else{
-                        main(vsText, fsText, imgText);
-                    }
-                });
-            }
-        }
-        )
-    }});
+    });
 };
 
-var main= function(vertexShaderText, fragmentShaderText, img){
+var main= function(vertexShaderText, fragmentShaderText, imgbox, imgsphere){
     //init canvas
     /** @type {HTMLCanvasElement} */
     var canvas = document.getElementById("glcanvas"); 
@@ -120,6 +125,7 @@ var main= function(vertexShaderText, fragmentShaderText, img){
     gl.enableVertexAttribArray(texCoordAttribLocation);
     gl.enableVertexAttribArray(normalAttribLocation);
     
+    //Texture for box
     var boxTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, boxTexture);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -129,7 +135,19 @@ var main= function(vertexShaderText, fragmentShaderText, img){
 	gl.texImage2D(
 		gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,
 		gl.UNSIGNED_BYTE,
-		img
+		imgbox
+	);
+    //Texture for sphere
+    var sphereTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	gl.texImage2D(
+		gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,
+		gl.UNSIGNED_BYTE,
+		imgsphere
 	);
     // Tell WebGL which program we are using
     gl.useProgram(program);
@@ -202,7 +220,9 @@ var main= function(vertexShaderText, fragmentShaderText, img){
         getAttribData_TextureFrag(gl, positionAttribLocation, texCoordAttribLocation);
         createNormalBuffer(gl, sphereNormal);
         getNormalAttribData(gl, normalAttribLocation);
-
+	
+	gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
+		
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, w_matrix2);
 	    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
 	    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
