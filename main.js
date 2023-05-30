@@ -296,14 +296,12 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
         getAttribData_TextureFrag(gl, positionAttribLocation, texCoordAttribLocation);
         createNormalBuffer(gl, planeNormal);
         getNormalAttribData(gl, normalAttribLocation);
-	
 	    gl.bindTexture(gl.TEXTURE_2D, boxTexture);
 		
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, w_matrix3);
 	    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
 	    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
         gl.drawElements(gl.TRIANGLES, planeIndices.length, gl.UNSIGNED_SHORT, 0);
-
 
         gl.useProgram(cubeProgram);
         // TO DO: make util function
