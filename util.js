@@ -13,6 +13,7 @@ var loadTextResource = function (url, callback){
     };
     request.send();
 }
+
 // Load image function for texture
 var loadImage = function (url, callback){
     var image = new Image();
@@ -22,71 +23,48 @@ var loadImage = function (url, callback){
     image.src = url;
 }
 
-// Load JSON 3d resource
-var loadJSONResource = function(url, callback){
-    loadTextResource(url, function(err, result){
-        if(err){
-            callback(err);
-        } else{
-            try{
-                callback(null, JSON.parse(result));
-            } catch(e){
-                callback(e);
-            }
-        }
-    })
+var createProgramFromText = function(gl, program, vertexShaderText, fragmentShaderText)
+{
+    //
+    // Create shader
+    //
+    var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+    var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+
+    // Tell web gl which shaderSource we are using
+    gl.shaderSource(vertexShader, vertexShaderText);
+    gl.shaderSource(fragmentShader, fragmentShaderText);
+    
+    //check compile shader
+    gl.compileShader(vertexShader);
+    if(!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)){
+        console.error('ERROR compiling vertex shader', gl.getShaderInfoLog(vertexShader));
+        return;
+    }
+    gl.compileShader(fragmentShader);
+    
+    //check compile shader
+    if(!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)){
+        console.error('ERROR compiling fragment shader', gl.getShaderInfoLog(fragmentShader));
+        return;
+    }
+    
+    //create program like in C
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    //check for error when linking shader
+    if(!gl.getProgramParameter(program, gl.LINK_STATUS)){
+        console.error('ERROR linking program', gl.getProgramInfoLog(program));
+        return;
+    }
 }
 // TO DO: create Color vertex function
 // This function create vertices with offset, because we don't need animation so this will do
 // x, y, z is offset
-var createSphereVertexAndIndices_color = function(x, y, z){
-    var SPHERE_DIV = 240;
-    var i, ai, si, ci;
-    var j, aj, sj, cj;
-    var p1, p2;
 
-    // Vertices
-    var vertices = [], indices = [];
-    for (j = 0; j <= SPHERE_DIV; j++) {
-        // Math from online source to calculate all the vertice of a sphere
-        aj = j * Math.PI / SPHERE_DIV;
-        sj = Math.sin(aj);
-        cj = Math.cos(aj);
-        for (i = 0; i <= SPHERE_DIV; i++) {
-            ai = i * 2 * Math.PI / SPHERE_DIV; 
-            si = Math.sin(ai);
-            ci = Math.cos(ai);
-
-
-            vertices.push(si * sj );  // X
-            vertices.push(cj );       // Y
-            vertices.push(ci * sj);  // Z
-
-            vertices.push(si * sj);  // R
-            vertices.push(cj);       // G
-            vertices.push(ci * sj);  // B
-        }
-    }
-
-    for (j = 0; j < SPHERE_DIV; j++) {
-        for (i = 0; i < SPHERE_DIV; i++) {
-            // Math for the indices of sphere
-            p1 = j * (SPHERE_DIV+1) + i;
-            p2 = p1 + (SPHERE_DIV+1);
-
-            indices.push(p1);
-            indices.push(p2);
-            indices.push(p1 + 1);
-
-            indices.push(p1 + 1);
-            indices.push(p2);
-            indices.push(p2 + 1);
-        }
-      }
-    return [vertices, indices];
-}
-
-var createSphereVertexAndIndices_texture = function(x, y, z){
+var createSphereVertexAndIndices_texture = function(){
     var SPHERE_DIV = 240;
     var i, ai, si, ci;
     var j, aj, sj, cj;
@@ -131,79 +109,8 @@ var createSphereVertexAndIndices_texture = function(x, y, z){
       }
     return [vertices, indices];
 }
-// This function create vertices with offset, because we don't need animation so this will do
-// x, y, z is offset
-var createBoxVertexAndIndices_color = function(x, y, z){
-    var boxVertices = 
-	[   // X,        Y,       Z           R, G, B   
-		// Top                          // change this matrix to U V for texture map (online source)
-		-1.0 + x, 1.0 + y, -1.0 + z,   0.5, 0.5, 0.5,
-		-1.0 + x, 1.0 + y, 1.0 + z,    0.5, 0.5, 0.5,
-		1.0 + x, 1.0 + y, 1.0 + z,     0.5, 0.5, 0.5,
-		1.0 + x, 1.0 + y, -1.0 + z,    0.5, 0.5, 0.5,
 
-		// Left
-		-1.0 + x, 1.0 + y, 1.0 + z,    0.75, 0.25, 0.5,
-		-1.0 + x, -1.0 + y, 1.0 + z,   0.75, 0.25, 0.5,
-		-1.0 + x, -1.0 + y, -1.0 + z,  0.75, 0.25, 0.5,
-		-1.0 + x, 1.0 + y, -1.0 + z,   0.75, 0.25, 0.5,
-
-		// Right
-		1.0 + x, 1.0 + y, 1.0 + z,    0.25, 0.25, 0.75,
-		1.0 + x, -1.0 + y, 1.0 + z,   0.25, 0.25, 0.75,
-		1.0 + x, -1.0 + y, -1.0 + z,  0.25, 0.25, 0.75,
-		1.0 + x, 1.0 + y, -1.0 + z,   0.25, 0.25, 0.75,
-
-		// Front
-		1.0 + x, 1.0 + y, 1.0 + z,    1.0, 0.0, 0.15,
-		1.0 + x, -1.0 + y, 1.0 + z,    1.0, 0.0, 0.15,
-		-1.0 + x, -1.0 + y, 1.0 + z,    1.0, 0.0, 0.15,
-		-1.0 + x, 1.0 + y, 1.0 + z,    1.0, 0.0, 0.15,
-
-		// Back
-		1.0 + x, 1.0 + y, -1.0 + z,    0.0, 1.0, 0.15,
-		1.0 + x, -1.0 + y, -1.0 + z,    0.0, 1.0, 0.15,
-		-1.0 + x, -1.0 + y, -1.0 + z,    0.0, 1.0, 0.15,
-		-1.0 + x, 1.0 + y, -1.0 + z,    0.0, 1.0, 0.15,
-
-		// Bottom
-		-1.0 + x, -1.0 + y, -1.0 + z,   0.5, 0.5, 1.0,
-		-1.0 + x, -1.0 + y, 1.0 + z,    0.5, 0.5, 1.0,
-		1.0 + x, -1.0 + y, 1.0 + z,     0.5, 0.5, 1.0,
-		1.0 + x, -1.0 + y, -1.0 + z,    0.5, 0.5, 1.0,
-	];
-
-    // Indices is correct and don't need to change
-    var boxIndices =
-    [
-        // Top
-		0, 1, 2,
-		0, 2, 3,
-
-		// Left
-		5, 4, 6,
-		6, 4, 7,
-
-		// Right
-		8, 9, 10,
-		8, 10, 11,
-
-		// Front
-		13, 12, 14,
-		15, 14, 12,
-
-		// Back
-		16, 17, 18,
-		16, 18, 19,
-
-		// Bottom
-		21, 20, 22,
-		22, 20, 23
-    ];
-    return [boxVertices, boxIndices];
-}
-
-var createBoxVertexAndIndices_texture = function(x, y, z){
+var createBoxVertexAndIndices_texture = function(){
     var boxVertices = 
 	[   // X,        Y,       Z          U V 
 		// Top                          // change this matrix to U V for texture map (online source)
@@ -264,7 +171,25 @@ var getCubeNormal= function()
           0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0 
     ];
     return normal;
-};
+}
+
+var createPlaneVertexAndIndices_texture = function(){
+    var planeVertices = 
+	[   // X,        Y,       Z          U      V 
+		// Top                          // change this matrix to U V for texture map (online source)
+        1.0, 1.0, 1.0,                  1.0, 0.0,        
+        1.0, 1.0,-1.0,                  1.0, 1.0,
+        -1.0, 1.0,-1.0,                 0.0, 1.0,
+        -1.0, 1.0, 1.0,                 0.0, 0.0,
+	];
+
+    var planeIndices =
+    [
+        0, 1, 2,   
+        0, 2, 3
+    ];
+    return [planeVertices, planeIndices];
+}
 
 var getSphereNormal= function()
 {
@@ -291,6 +216,19 @@ var getSphereNormal= function()
     }
     return normal;
 }
+
+var getPlaneNormal= function()
+{
+    normal=[
+
+        0.0, 1.0, 0.0,
+        0.0, 1.0, 0.0,   
+        0.0, 1.0, 0.0,   
+        0.0, 1.0, 0.0,
+    ];
+    return normal;
+}
+
 // Get Buffer data to draw object
 var createBufferFromVerticesAndIndices = function(gl, Vertices, Indices)
 {
