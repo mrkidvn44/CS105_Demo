@@ -36,7 +36,14 @@ var Init = function()
                                             alert('Fatal error getting fragment shader (see console)');
                                             console.error(fsErr);
                                         } else {
-                                            main(sbvsText,sbfsText,vsText, fsText, boxImgText, sphereImgText);
+                                            loadImage('./plane.jpg', function(planeImgErr, planeImgText) {
+                                                if (planeImgErr) {
+                                                    alert('Fatal error getting plane texture');
+                                                    console.log(planeImgErr);
+                                                } else {
+                                                    main(sbvsText, sbfsText, vsText, fsText, boxImgText, sphereImgText, planeImgText);
+                                                }
+                                            });
                                         }
                                     });
                                 }
@@ -44,14 +51,14 @@ var Init = function()
                         }
                     });
                 }
-            })
+            });
             }
-        })
+        });
         }
     });
 };
 
-var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, imgbox, imgsphere){
+var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, imgbox, imgsphere, planeImg){
     //init canvas
     /** @type {HTMLCanvasElement} */
     var canvas = document.getElementById("glcanvas"); 
@@ -147,7 +154,7 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
 	gl.texImage2D(
 		gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,
 		gl.UNSIGNED_BYTE,
-		imgbox
+		planeImg
 	);
     
     // Texture for enviroment
@@ -296,7 +303,7 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
         getAttribData_TextureFrag(gl, positionAttribLocation, texCoordAttribLocation);
         createNormalBuffer(gl, planeNormal);
         getNormalAttribData(gl, normalAttribLocation);
-	    gl.bindTexture(gl.TEXTURE_2D, boxTexture);
+	    gl.bindTexture(gl.TEXTURE_2D, planeTexture);
 		
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, w_matrix3);
 	    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
