@@ -104,7 +104,7 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
     var [boxVertices, boxIndices] = createBoxVertexAndIndices_texture();
     var [sphereVertices, sphereIndices] = createSphereVertexAndIndices_texture();
     var [planeVertices, planeIndices] = createPlaneVertexAndIndices_texture();
-
+    // Get the object's normal for buffer
     var boxNormal = getCubeNormal();
     var sphereNormal = getSphereNormal();
     var planeNormal = getPlaneNormal(); 
@@ -129,8 +129,7 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
 		gl.UNSIGNED_BYTE,
 		imgbox
 	);
-    
-    
+
     //Texture for sphere
     var sphereTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
@@ -239,7 +238,7 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
 	gl.uniform3f(sunlightIntUniformLocation, 1.0, 1.0, 1.0);
 
     // Camera posistion
-    var camPos = [0,0, -10]
+    var camPos = [0, 0, -10]
 
     // Init some value for matrices
     mat4.identity(worldMatrix);
@@ -251,12 +250,12 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
     // Mouse event handler
     mouseControl(window, camPos);
     
-    var positionLocation = gl.getAttribLocation(cubeProgram, "a_position");
+    var positionLocation = gl.getAttribLocation(cubeProgram, "sbVertPosition");
     gl.enableVertexAttribArray(positionLocation);
     // lookup uniforms
-    var skyboxLocation = gl.getUniformLocation(cubeProgram, "u_skybox");
+    var skyboxLocation = gl.getUniformLocation(cubeProgram, "skyboxBuffer");
     var viewDirectionProjectionInverseLocation =
-        gl.getUniformLocation(cubeProgram, "u_viewDirectionProjectionInverse");
+        gl.getUniformLocation(cubeProgram, "mViewDirectionProjectionInverse");
 
 	//
 	// Main render loop
@@ -310,52 +309,14 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
 	    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
         gl.drawElements(gl.TRIANGLES, planeIndices.length, gl.UNSIGNED_SHORT, 0);
 
+
         gl.useProgram(cubeProgram);
         // TO DO: make util function
         // Turn on the position attribute
         gl.enableVertexAttribArray(positionLocation);
-
-        // Bind the position buffer.
-        var positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        var positions = new Float32Array(
-            [
-              -1, -1,
-               1, -1,
-              -1,  1,
-              -1,  1,
-               1, -1,
-               1,  1,
-            ]);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-        // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-        var size = 2;          // 2 components per iteration
-        var type = gl.FLOAT;   // the data is 32bit floats
-        var normalize = false; // don't normalize the data
-        var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-        var offset = 0;        // start at the beginning of the buffer
-        gl.vertexAttribPointer(
-            positionLocation, size, type, normalize, stride, offset);
-
-
-        // Make a view matrix from the camera matrix.
-        var viewMatrix2 = new Float32Array(16);
-        mat4.invert(viewMatrix2,viewMatrix);
-
-        // We only care about direciton so remove the translation
-        viewMatrix2[12] = 0;
-        viewMatrix2[13] = 0;
-        viewMatrix2[14] = 0;
-
-        var viewDirectionProjectionMatrix = new Float32Array(16);
-        mat4.multiply(viewDirectionProjectionMatrix,projMatrix, viewMatrix2);
-        var viewDirectionProjectionInverseMatrix = new Float32Array(16);
-        mat4.invert(viewDirectionProjectionInverseMatrix, viewDirectionProjectionMatrix);
-
-        // Set the uniforms
-        gl.uniformMatrix4fv(
-            viewDirectionProjectionInverseLocation, false,
-            viewDirectionProjectionInverseMatrix);
+        createSkyBoxBuffer(gl, positionLocation);
+        // Calculate the view Direction projection matrix for shader
+        skyBoxMatrixTransform(gl, viewMatrix, viewDirectionProjectionInverseLocation, projMatrix, mat4)
 
         // Tell the shader to use texture unit 0 for u_skybox
         gl.uniform1i(skyboxLocation, 0);

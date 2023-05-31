@@ -1,6 +1,6 @@
-attribute vec4 a_position;
-varying vec4 v_position;
+attribute vec4 sbVertPosition;
+varying vec4 position;
 void main() {
-    v_position = a_position;
-    gl_Position = vec4(a_position.xy, 1, 1);
+    position = sbVertPosition;
+    gl_Position = vec4(sbVertPosition.xy, 1, 1);
 }

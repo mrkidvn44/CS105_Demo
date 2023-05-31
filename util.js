@@ -1,3 +1,4 @@
+
 // Load text resource from a file 
 var loadTextResource = function (url, callback){
 
@@ -265,6 +266,7 @@ var createNormalBuffer = function(gl, normal)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normal), gl.STATIC_DRAW);
     return gl;
 }
+
 var createBuffer = function(gl, Vertices, Indices, normal)
 {
     // Create buffer object
@@ -328,6 +330,7 @@ var getAttribData_TextureFrag = function(gl, positionAttribLocation, texCoordAtt
 	);
     return gl;
 }
+
 var getNormalAttribData = function(gl, normalAttribLocation)
 {
     // Position attribute from buffer
@@ -339,5 +342,60 @@ var getNormalAttribData = function(gl, normalAttribLocation)
 		3 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
 		0 // Offset from the beginning of a single vertex to this attribute
 	);
+    return gl;
+}
+
+// Create the sky box buffer and it attribute
+var createSkyBoxBuffer = function(gl, positionLocation)
+{
+    // Bind the position buffer.
+    var positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    var positions = new Float32Array(
+        [
+          -1, -1,
+           1, -1,
+          -1,  1,
+          -1,  1,
+           1, -1,
+           1,  1,
+        ]);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+    // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+    var size = 2;          // 2 components per iteration
+    var type = gl.FLOAT;   // the data is 32bit floats
+    var normalize = false; // don't normalize the data
+    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+    var offset = 0;        // start at the beginning of the buffer
+    gl.vertexAttribPointer(
+        positionLocation, 
+        size, 
+        type, 
+        normalize, 
+        stride, 
+        offset);
+    return gl;
+}
+
+var skyBoxMatrixTransform = function(gl, viewMatrix, viewDirectionProjectionInverseLocation,projMatrix, mat4)
+{
+    // Make a view matrix from the camera matrix.
+    var viewMatrix2 = new Float32Array(16);
+    mat4.invert(viewMatrix2,viewMatrix);
+
+    // We only care about direciton so remove the translation
+    viewMatrix2[12] = 0;
+    viewMatrix2[13] = 0;
+    viewMatrix2[14] = 0;
+
+    var viewDirectionProjectionMatrix = new Float32Array(16);
+    mat4.multiply(viewDirectionProjectionMatrix,projMatrix, viewMatrix2);
+    var viewDirectionProjectionInverseMatrix = new Float32Array(16);
+    mat4.invert(viewDirectionProjectionInverseMatrix, viewDirectionProjectionMatrix);
+
+    // Set the uniforms
+    gl.uniformMatrix4fv(
+        viewDirectionProjectionInverseLocation, false,
+        viewDirectionProjectionInverseMatrix);
     return gl;
 }
