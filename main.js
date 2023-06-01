@@ -233,8 +233,10 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
 	var sunlightDirUniformLocation = gl.getUniformLocation(program, 'sun.direction');
 	var sunlightIntUniformLocation = gl.getUniformLocation(program, 'sun.color');
 
+    var sunDirection = [-1.0, 1.0, -1.0];
+
 	gl.uniform3f(ambientUniformLocation, 0.5, 0.5, 0.2);
-	gl.uniform3f(sunlightDirUniformLocation, -1.0, 1.0, -1.0);
+	gl.uniform3f(sunlightDirUniformLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
 	gl.uniform3f(sunlightIntUniformLocation, 1.0, 1.0, 1.0);
 
     // Camera posistion
@@ -244,9 +246,58 @@ var main= function(sVShader, sFShader, vertexShaderText, fragmentShaderText, img
     mat4.identity(worldMatrix);
     mat4.lookAt(viewMatrix, camPos, [0,0,0], [0,1,0]);
     mat4.perspective(projMatrix, glMatrix.toRadian(45), canvas.clientWidth/canvas.clientHeight,0.1,1000.0);
-    
-    
 
+    // Change the light direction function
+    var defaultDirection = function()
+    {
+        gl.useProgram(program);
+        sunDirection = [-1.0, 1.0, -1.0];
+        gl.uniform3f(sunlightDirUniformLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
+    };
+
+    var topDownDirection = function()
+    {
+        gl.useProgram(program);
+        sunDirection = [0.0, 1.0, 0.0];
+        gl.uniform3f(sunlightDirUniformLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
+    };
+
+    var sideWayDirection = function()
+    {
+        gl.useProgram(program);
+        sunDirection = [1.0, 0.0, 0.0];
+        gl.uniform3f(sunlightDirUniformLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
+    };
+    
+    var frontDirection = function()
+    {
+        gl.useProgram(program);
+        sunDirection = [0.0, 0.0, -1.0];
+        gl.uniform3f(sunlightDirUniformLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
+    };
+
+    var sideDownDirection = function()
+    {
+        gl.useProgram(program);
+        sunDirection = [1.0, 1.0, 0.0];
+        gl.uniform3f(sunlightDirUniformLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
+    };
+
+    var frontDownDirection = function()
+    {
+        gl.useProgram(program);
+        sunDirection = [0.0, 1.0, -1.0];
+        gl.uniform3f(sunlightDirUniformLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
+    };
+
+    // Add function to onclick event of buttons
+    document.getElementById("default").onclick = defaultDirection;
+    document.getElementById("topDown").onclick = topDownDirection;
+    document.getElementById("sideWay").onclick = sideWayDirection;
+    document.getElementById("front").onclick = frontDirection;
+    document.getElementById("sideDown").onclick = sideDownDirection;
+    document.getElementById("frontDown").onclick = frontDownDirection;
+    
     // Mouse event handler
     mouseControl(window, camPos);
     
